@@ -1,7 +1,14 @@
-import { greetUser } from '$utils/greet';
+import { copyToClipboard } from '@utils/copyToClipboard';
+import { greenhouse } from '@utils/greenhouse';
 
 window.Webflow ||= [];
 window.Webflow.push(() => {
-  const name = 'John Doe';
-  greetUser(name);
+  greenhouse();
+  copyToClipboard();
 });
+
+// for testing purposes
+
+// window.onload = () => {
+//   greenhouse()
+// }
