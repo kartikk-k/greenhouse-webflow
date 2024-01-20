@@ -38,7 +38,7 @@ export const greenhouse = () => {
     data.forEach(item => {
       let newElement = listElement.cloneNode(true) as Element
       // @ts-ignore
-      newElement.style.opacity = '1'
+      newElement.style.display = 'block'
       REQUIRED_FIELDS.forEach(field => {
         // find all elements of the current field
         newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach(element => {
