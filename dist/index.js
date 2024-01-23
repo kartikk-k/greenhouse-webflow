@@ -16,7 +16,6 @@
     name: "location",
     options: ["All Locations"]
   }];
-  var activeFilters = [];
   var mainElement;
   var list;
   var listElement;
@@ -59,6 +58,7 @@
   function setCurrentPageData() {
     if (!dataStore)
       return;
+    console.log("current_page", current_page);
     currentData = dataStore.slice((current_page - 1) * results_per_page, current_page * results_per_page);
     console.log("currentData", currentData);
     renderList();
@@ -113,38 +113,35 @@
       });
   }
   function handleFilterChange(e) {
-    const value = e.target.value;
-    if (value === "All Departments" || value === "All Locations") {
-      dataStore = allData;
-      setCurrentPageData();
-      activeFilters = [];
-      return;
-    }
-    let filter_type = e.target.getAttribute("tc-greenhouse-filter");
-    activeFilters.push({
-      name: filter_type,
-      options: value
-    });
-    applyFilters();
-  }
-  function applyFilters() {
+    const locationFilter = document.querySelector('[tc-greenhouse-filter="location"]');
+    const departmentFilter = document.querySelector('[tc-greenhouse-filter="department"]');
     let filteredData = [];
-    activeFilters.forEach((filter) => {
-      filteredData = allData.filter((item) => {
-        let isExists = false;
-        if (currentData.find((data) => data.id === item.id))
-          isExists = true;
-        if (!isExists) {
-          if (filter.name === "department") {
-            return item.departments[0].name === filter.options;
-          } else if (filter.name === "location") {
-            return item.location.name === filter.options;
+    if (locationFilter?.value && departmentFilter?.value) {
+      if (locationFilter.value === "All Locations" && departmentFilter.value === "All Departments")
+        filteredData = allData;
+      else if (locationFilter.value === "All Locations") {
+        allData.forEach((item) => {
+          if (item.departments[0].name === departmentFilter.value) {
+            filteredData.push(item);
           }
-        }
-      });
-    });
+        });
+      } else if (departmentFilter.value === "All Departments") {
+        allData.forEach((item) => {
+          if (item.location.name === locationFilter.value) {
+            filteredData.push(item);
+          }
+        });
+      } else {
+        allData.forEach((item) => {
+          if (item.departments[0].name === departmentFilter.value && item.location.name === locationFilter.value) {
+            filteredData.push(item);
+          }
+        });
+      }
+    }
     console.log(filteredData.length);
     dataStore = filteredData;
+    current_page = 1;
     setCurrentPageData();
   }
   async function getDataFromGreenhouseAPI() {
