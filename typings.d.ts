@@ -1,3 +1,12 @@
+interface filter {
+  name: string;
+  options: string[]
+}
+interface activeFilter {
+  name: string;
+  options: string
+}
+
 interface job {
     absolute_url?: string;
     data_compliance: Datacompliance[];
