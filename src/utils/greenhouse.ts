@@ -1,78 +1,99 @@
-type job = {
-  department: string;
-  position: string;
-  location: string;
-}
 
-export const greenhouse = () => {
-  const REQUIRED_FIELDS = ['department', 'position', 'location']
+let results_per_page = 5;
+let current_page = 1;
 
-  // main greenhouse component - every other component should be inside this
-  const mainElement = document.querySelectorAll('[tc-greenhouse-main="active"]')[0];
-  // element that will be used to single job result
-  const listElement = document.querySelectorAll('[tc-greenhouse-element="list-item"]')[0];
+let dataStore: undefined | null | job[]
 
-  // results/ list of elements to render
-  let list: Element[] = []
+let currentData: job[] = []
 
-  // temp data
-  const data: job[] = [{
-    department: 'Core Accounting',
-    position: 'Accounts',
-    location: 'New York, USA',
-  }, {
-    department: 'Information Technology',
-    position: 'Software Engineer',
-    location: 'San Francisco, USA'
-  }, {
-    department: 'Designing',
-    position: '3D Designer',
-    location: 'San Francisco, USA'
-  }];
+// components required
+let mainElement: Element | undefined
+let list: Element | undefined
+let listElement: Element | undefined
 
-  renderList(data)
+let REQUIRED_FIELDS = ['department', 'title', 'location', 'content']
 
-  function renderList(data: job[]) {
-    if (!mainElement) return
+export const greenhouse = async () => {
 
-    data.forEach(item => {
-      let newElement = listElement.cloneNode(true) as Element
-      // @ts-ignore
-      newElement.style.display = 'block'
-      REQUIRED_FIELDS.forEach(field => {
-        // find all elements of the current field
-        newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach(element => {
-          // replacing with actual data
-          element.textContent = item[field as keyof job]
-        })
-      })
-      console.log("adding")
-      list.push(newElement)
-    })
+  // Getting all the required elements
+  mainElement = document.querySelectorAll('[tc-greenhouse-element="main"]')[0];
+  list = mainElement?.querySelectorAll('[tc-greenhouse-element="list"]')[0];
+  listElement = list?.querySelectorAll('[tc-greenhouse-element="list-item"]')[0];
 
-    listElement.remove()
-    list.map(element => mainElement.appendChild(element))
-  }
+  if (!mainElement || !list || !listElement) return
 
+  // add on click on next and previous buttons
+  const nextButton = document.getElementsByClassName('wf-next')[0]
+  const previousButton = document.getElementsByClassName('wf-previous')[0]
+
+  nextButton.addEventListener('click', handleNext)
+  previousButton.addEventListener('click', handlePrevious)
+
+  await getDataFromGreenhouseAPI()
 };
 
-/* outline of the greenhouse component:
-    -> main
-        tc-main - manual
-        tc-pagination - manual (optional)
-        tc-results-per-page - manual (optional)
+function renderList() {
+  if (!listElement) return
 
-    -> filter
-        filters[] - manual
-            tc-filters-list - manual
-             |- tc-filter-item - auto
-             |- tc-filter-item - auto
+  let items: HTMLElement[] = []
 
-    -> results (positions)
-        tc-results-list - manual
-            |- tc-position-item - auto
-            |- tc-position-item - auto
-    
-    -> error component
-        tc-error - manual
-*/
+  // creating list of elements
+  currentData.forEach(item => {
+    let newElement = listElement!.cloneNode(true) as HTMLElement
+
+    newElement.style.display = 'block'
+    newElement.style.opacity = '1'
+    REQUIRED_FIELDS.forEach(field => {
+      // find all elements of the current field
+      newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach(element => {
+        // replacing with actual data
+        if (field === 'location') {
+          element.innerHTML = item.location.name
+        } else {
+          element.textContent = item[field as keyof job]
+        }
+      })
+    })
+    items.push(newElement)
+  })
+
+  // clearing current list of elements
+  list!.innerHTML = ''
+  list?.append(...items)
+}
+
+function setCurrentPageData(data: job[]) {
+  currentData = data.slice((current_page - 1) * results_per_page, current_page * results_per_page)
+  console.log("currentData", currentData)
+  renderList()
+}
+
+function handlePrevious() {
+  console.log("clicked previous")
+  if (current_page > 1) {
+    current_page--
+    currentData = dataStore!.slice((current_page - 1) * results_per_page, current_page * results_per_page)
+    renderList()
+  }
+  list?.scrollIntoView({ behavior: 'smooth' })
+}
+
+function handleNext() {
+  console.log("clicked next")
+  if (current_page < Math.ceil(dataStore!.length / results_per_page)) {
+    current_page++
+    currentData = dataStore!.slice((current_page - 1) * results_per_page, current_page * results_per_page)
+    renderList()
+  }
+  list?.scrollIntoView({ behavior: 'smooth' })
+}
+
+async function getDataFromGreenhouseAPI() {
+  let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
+    method: 'GET',
+  }).then(res => res.json())
+
+  dataStore = res.jobs
+  setCurrentPageData(dataStore!)
+  console.log(res)
+}
