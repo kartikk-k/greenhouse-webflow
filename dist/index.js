@@ -19,11 +19,14 @@
   var mainElement;
   var list;
   var listElement;
+  var searchElement;
   var REQUIRED_FIELDS = ["department", "title", "location", "content"];
   var greenhouse = async () => {
     mainElement = document.querySelectorAll('[tc-greenhouse-element="main"]')[0];
     list = mainElement?.querySelectorAll('[tc-greenhouse-element="list"]')[0];
     listElement = list?.querySelectorAll('[tc-greenhouse-element="list-item"]')[0];
+    searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0];
+    searchElement.addEventListener("input", (e) => handleInputChange(e.target.value));
     if (!mainElement || !list || !listElement)
       return;
     const nextButton = document.getElementsByClassName("wf-next")[0];
@@ -62,6 +65,19 @@
     currentData = dataStore.slice((current_page - 1) * results_per_page, current_page * results_per_page);
     console.log("currentData", currentData);
     renderList();
+  }
+  function handleInputChange(value) {
+    if (!dataStore)
+      return;
+    console.log("hello");
+    if (!value.trim()) {
+      dataStore = allData;
+    } else {
+      dataStore = dataStore.filter((item) => {
+        return item.title.toLowerCase().includes(value.toLowerCase());
+      });
+    }
+    setCurrentPageData();
   }
   function handlePrevious() {
     if (current_page > 1) {

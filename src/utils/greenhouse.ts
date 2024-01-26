@@ -2,10 +2,10 @@
 let results_per_page = 3;
 let current_page = 1;
 
-let allData: job[] = []
-let dataStore: undefined | null | job[]
+let allData: job[] = [] // all data from api response
+let dataStore: undefined | null | job[] // all data with filters/search applied
 
-let currentData: job[] = []
+let currentData: job[] = [] // paginated data
 
 let filters: filter[] = [{
   name: 'department',
@@ -15,13 +15,11 @@ let filters: filter[] = [{
   options: ['All Locations']
 }]
 
-// let activeFilters: activeFilter[] = []
-// let { locationFilter, departmentFilter } = { locationFilter: 'All Locations', departmentFilter: 'All Departments' }
-
 // components required
 let mainElement: Element | undefined
 let list: Element | undefined
 let listElement: Element | undefined
+let searchElement: HTMLInputElement | undefined
 
 let REQUIRED_FIELDS = ['department', 'title', 'location', 'content']
 
@@ -31,6 +29,11 @@ export const greenhouse = async () => {
   mainElement = document.querySelectorAll('[tc-greenhouse-element="main"]')[0];
   list = mainElement?.querySelectorAll('[tc-greenhouse-element="list"]')[0];
   listElement = list?.querySelectorAll('[tc-greenhouse-element="list-item"]')[0];
+  searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0] as HTMLInputElement;
+
+  // @ts-ignore
+  searchElement.addEventListener('input', e => handleInputChange(e.target.value))
+
 
   if (!mainElement || !list || !listElement) return
 
@@ -81,6 +84,21 @@ function setCurrentPageData() {
   currentData = dataStore.slice((current_page - 1) * results_per_page, current_page * results_per_page)
   console.log("currentData", currentData)
   renderList()
+}
+
+function handleInputChange(value: string) {
+  if (!dataStore) return
+  console.log("hello")
+  if (!value.trim()) {
+    dataStore = allData
+  } else {
+    dataStore = dataStore!.filter(item => {
+      return item.title.toLowerCase().includes(value.toLowerCase())
+      // ||
+      //   item.content.toLowerCase().includes(value.toLowerCase())
+    })
+  }
+  setCurrentPageData()
 }
 
 function handlePrevious() {
@@ -178,72 +196,8 @@ function handleFilterChange(e: Event) {
   dataStore = filteredData
   current_page = 1
   setCurrentPageData()
-  // if ((value === 'All Departments' || value === 'All Locations') && !activeFilters.length) {
-  //   dataStore = allData
-  //   activeFilters = []
-  //   setCurrentPageData()
-  //   return
-  // } else if (value === 'All Departments' || value === 'All Locations') {
-  //   activeFilters = activeFilters.filter(filter => filter.name !== (e.target as HTMLSelectElement).getAttribute('tc-greenhouse-filter'))
-  //   applyFilters()
-  //   return
-  // }
-
-  // let filter_type = (e.target as HTMLSelectElement).getAttribute('tc-greenhouse-filter') as string
-
-  // activeFilters.push({
-  //   name: filter_type,
-  //   options: value
-  // })
-
-  // applyFilters()
 }
 
-// function applyFilters() {
-//   let filteredData: job[] = []
-
-//   allData.forEach(item => {
-//     if (activeFilters.length > 1) {
-//       // multiple filters
-//       if (item.departments[0].name === activeFilters[0].options && item.location.name === activeFilters[1].options) {
-//         filteredData.push(item)
-//       }
-//     } else {
-//       // single filter
-//       if (activeFilters[0].name === 'department') {
-//         if (item.departments[0].name === activeFilters[0].options) {
-//           filteredData.push(item)
-//         }
-//       } else if (activeFilters[0].name === 'location') {
-//         if (item.location.name === activeFilters[0].options) {
-//           filteredData.push(item)
-//         }
-//       }
-//     }
-//   })
-
-//   // activeFilters.forEach(filter => {
-//   //   filteredData = allData.filter(item => {
-//   //     let isExists = false
-
-//   //     if (currentData.find(data => data.id === item.id)) isExists = true
-
-//   //     if (!isExists) {
-//   //       if (filter.name === 'department') {
-//   //         return item.departments[0].name === filter.options
-//   //       } else if (filter.name === 'location') {
-//   //         return item.location.name === filter.options
-//   //       }
-//   //     }
-
-//   //   })
-//   // })
-
-//   console.log(filteredData.length)
-
-//   dataStore = filteredData
-//   setCurrentPageData()
-// }
 
 async function getDataFromGreenhouseAPI() {
   let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
