@@ -5,11 +5,10 @@
 
   // src/utils/greenhouse.ts
   var greenhouse = async () => {
-    let results_per_page = 3;
     let current_page = 1;
     let apiData = [];
     let dataStore = [];
-    let filteredData;
+    let filteredData = [];
     let paginatedData = [];
     let filters = [{
       name: "department",
@@ -18,23 +17,19 @@
       name: "location",
       options: ["All Locations"]
     }];
-    let mainElement;
-    let list;
-    let listElement;
-    let searchElement;
-    let paginate = false;
     let REQUIRED_FIELDS = ["department", "title", "location", "content"];
-    mainElement = document.querySelectorAll('[tc-greenhouse-element="main"]')[0];
-    list = mainElement?.querySelectorAll('[tc-greenhouse-element="list"]')[0];
-    listElement = list?.querySelectorAll('[tc-greenhouse-element="list-item"]')[0];
-    searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0];
-    searchElement.addEventListener("input", (e) => handleInputChange(e.target.value));
+    let mainElement = document.querySelector('[tc-greenhouse-element="main"]');
+    let list = mainElement?.querySelector('[tc-greenhouse-element="list"]');
+    let listElement = list?.querySelector('[tc-greenhouse-element="list-item"]');
     if (!mainElement || !list || !listElement)
       return;
-    const nextButton = document.getElementsByClassName("wf-next")[0];
-    const previousButton = document.getElementsByClassName("wf-previous")[0];
-    nextButton.addEventListener("click", handleNext);
-    previousButton.addEventListener("click", handlePrevious);
+    let searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0];
+    searchElement && searchElement.addEventListener("input", (e) => handleInputChange(e.target.value));
+    let paginate = mainElement.getAttribute("tc-greenhouse-paginate") === "true" ? true : false;
+    paginate ? addPagination() : addVerticalLoader();
+    let contentSearch = mainElement.querySelector('[tc-greenhouse-content-search="true"]') ? true : false;
+    let resultsPerPage = Number(mainElement.querySelector("[tc-greenhouse-results-per-page]")?.getAttribute("tc-greenhouse-results-per-page")) || 3;
+    console.log(mainElement.querySelector("[tc-greenhouse-results-per-page]")?.getAttribute("tc-greenhouse-results-per-page"));
     await getDataFromGreenhouseAPI();
     setFilters();
     function renderList() {
@@ -63,42 +58,73 @@
       if (!filteredData)
         return;
       console.log("current_page", current_page);
-      paginatedData = filteredData.slice((current_page - 1) * results_per_page, current_page * results_per_page);
-      console.log("paginatedData", paginatedData);
+      if (paginate) {
+        paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage);
+        console.log("paginatedData", paginatedData);
+      } else {
+        if (!paginatedData.length)
+          paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage);
+        else {
+          paginatedData = filteredData.slice(0, resultsPerPage * current_page);
+        }
+      }
       renderList();
     }
     function handleInputChange(value) {
-      if (!filteredData)
+      if (!apiData)
         return;
       console.log(value.trim());
       if (!value.trim()) {
-        filteredData = apiData;
+        filteredData = dataStore;
+        dataStore = [];
       } else {
-        filteredData = filteredData.filter((item) => {
-          console.log(item.title.trim().toLowerCase().includes(value.trim().toLowerCase()));
+        if (!dataStore.length)
+          dataStore = filteredData;
+        filteredData = dataStore.filter((item) => {
           return item.title.trim().toLowerCase().includes(value.trim().toLowerCase());
         });
       }
       setCurrentPageData();
     }
+    function addVerticalLoader() {
+      const loadMoreButton = mainElement?.querySelector('[tc-greenhouse-element="load-more"]');
+      console.log(loadMoreButton);
+      loadMoreButton?.addEventListener("click", handleLoadMore);
+    }
+    function handleLoadMore() {
+      if (current_page < Math.ceil(filteredData.length / resultsPerPage)) {
+        current_page++;
+        const newData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage);
+        paginatedData = paginatedData.concat(newData);
+        renderList();
+      }
+    }
+    function addPagination() {
+      const nextButton = document.getElementsByClassName("wf-next")[0];
+      const previousButton = document.getElementsByClassName("wf-previous")[0];
+      nextButton?.addEventListener("click", handleNext);
+      previousButton?.addEventListener("click", handlePrevious);
+    }
     function handlePrevious() {
       if (current_page > 1) {
         current_page--;
-        paginatedData = filteredData.slice((current_page - 1) * results_per_page, current_page * results_per_page);
+        paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage);
         renderList();
       }
       list?.scrollIntoView({ behavior: "smooth" });
     }
     function handleNext() {
-      if (current_page < Math.ceil(filteredData.length / results_per_page)) {
+      if (current_page < Math.ceil(filteredData.length / resultsPerPage)) {
         current_page++;
-        paginatedData = filteredData.slice((current_page - 1) * results_per_page, current_page * results_per_page);
+        paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage);
         renderList();
       }
       list?.scrollIntoView({ behavior: "smooth" });
     }
     function setFilters() {
       let filter_options = filters.map((filter) => filter.name);
+      if (!apiData)
+        return;
       apiData.forEach((item) => {
         let existing_department = filters[0].options.map((option) => option);
         let existing_location = filters[1].options.map((option) => option);
@@ -131,34 +157,37 @@
         });
     }
     function handleFilterChange(e) {
+      if (!apiData)
+        return;
+      console.log(e.target);
       const locationFilter = document.querySelector('[tc-greenhouse-filter="location"]');
       const departmentFilter = document.querySelector('[tc-greenhouse-filter="department"]');
-      let filteredData2 = [];
+      let sortedData = [];
       if (locationFilter?.value && departmentFilter?.value) {
         if (locationFilter.value === "All Locations" && departmentFilter.value === "All Departments")
-          filteredData2 = apiData;
+          sortedData = apiData;
         else if (locationFilter.value === "All Locations") {
           apiData.forEach((item) => {
             if (item.departments[0].name === departmentFilter.value) {
-              filteredData2.push(item);
+              sortedData.push(item);
             }
           });
         } else if (departmentFilter.value === "All Departments") {
           apiData.forEach((item) => {
             if (item.location.name === locationFilter.value) {
-              filteredData2.push(item);
+              sortedData.push(item);
             }
           });
         } else {
           apiData.forEach((item) => {
             if (item.departments[0].name === departmentFilter.value && item.location.name === locationFilter.value) {
-              filteredData2.push(item);
+              sortedData.push(item);
             }
           });
         }
       }
-      console.log(filteredData2.length);
-      filteredData2 = filteredData2;
+      console.log(sortedData.length);
+      filteredData = sortedData;
       current_page = 1;
       setCurrentPageData();
     }

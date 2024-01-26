@@ -1,13 +1,11 @@
 
 
 export const greenhouse = async () => {
-  let results_per_page = 3;
   let current_page = 1;
 
-  let apiData: job[] = [] // all data from api response
-  let dataStore: job[] = []
-  let filteredData: undefined | null | job[] // all data with filters/search applied
-
+  let apiData: undefined | null | job[] = [] // all data from api response
+  let dataStore: job[] = [] // used for search
+  let filteredData: job[] = [] // all data with filters/search applied
   let paginatedData: job[] = [] // paginated data
 
   let filters: filter[] = [{
@@ -18,42 +16,33 @@ export const greenhouse = async () => {
     options: ['All Locations']
   }]
 
-  // components required
-  let mainElement: Element | undefined
-  let list: Element | undefined
-  let listElement: Element | undefined
-  let searchElement: HTMLInputElement | undefined
-
-  let paginate: boolean = false
-
   let REQUIRED_FIELDS = ['department', 'title', 'location', 'content']
 
+  // components required
+  let mainElement = document.querySelector('[tc-greenhouse-element="main"]');
+  let list = mainElement?.querySelector('[tc-greenhouse-element="list"]');
+  let listElement = list?.querySelector('[tc-greenhouse-element="list-item"]');
+
+  if (!mainElement || !list || !listElement) return // essentials/required
+
+  let searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0] as HTMLInputElement;
+  // @ts-ignore
+  searchElement && searchElement.addEventListener('input', e => handleInputChange(e.target.value))
 
   // settings
-  // paginate = 
+  let paginate: boolean = mainElement.getAttribute('tc-greenhouse-paginate') === 'true' ? true : false // default - false
+  paginate ? addPagination() : addVerticalLoader()
 
-  // Getting all the required elements
-  mainElement = document.querySelectorAll('[tc-greenhouse-element="main"]')[0];
-  list = mainElement?.querySelectorAll('[tc-greenhouse-element="list"]')[0];
-  listElement = list?.querySelectorAll('[tc-greenhouse-element="list-item"]')[0];
-  searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0] as HTMLInputElement;
-
-  // @ts-ignore
-  searchElement.addEventListener('input', e => handleInputChange(e.target.value))
+  let contentSearch: boolean = mainElement.querySelector('[tc-greenhouse-content-search="true"]') ? true : false // default - false
+  //  --- pending ----
+  let resultsPerPage = Number(mainElement.querySelector('[tc-greenhouse-results-per-page]')?.getAttribute('tc-greenhouse-results-per-page')) || 3 // default - 3
+  console.log((mainElement.querySelector('[tc-greenhouse-results-per-page]')?.getAttribute('tc-greenhouse-results-per-page')))
 
 
-  if (!mainElement || !list || !listElement) return
-
-  // add on click on next and previous buttons
-  const nextButton = document.getElementsByClassName('wf-next')[0]
-  const previousButton = document.getElementsByClassName('wf-previous')[0]
-
-  nextButton.addEventListener('click', handleNext)
-  previousButton.addEventListener('click', handlePrevious)
 
   await getDataFromGreenhouseAPI()
   setFilters()
-  
+
   function renderList() {
     if (!listElement) return
 
@@ -87,19 +76,29 @@ export const greenhouse = async () => {
   function setCurrentPageData() {
     if (!filteredData) return
     console.log("current_page", current_page)
-    paginatedData = filteredData.slice((current_page - 1) * results_per_page, current_page * results_per_page)
-    console.log("paginatedData", paginatedData)
+    if (paginate) {
+      paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
+      console.log("paginatedData", paginatedData)
+    } else {
+      if (!paginatedData.length) paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
+      // change on search
+      else {
+        paginatedData = filteredData.slice(0, resultsPerPage * current_page)
+      }
+    }
     renderList()
   }
 
   function handleInputChange(value: string) {
-    if (!filteredData) return
+    if (!apiData) return
     console.log(value.trim())
     if (!value.trim()) {
-      filteredData = apiData
+      filteredData = dataStore
+      dataStore = []
     } else {
-      filteredData = filteredData.filter(item => {
-        console.log(item.title.trim().toLowerCase().includes(value.trim().toLowerCase()))
+      if (!dataStore.length) dataStore = filteredData
+
+      filteredData = dataStore.filter(item => {
         return item.title.trim().toLowerCase().includes(value.trim().toLowerCase())
         // ||
         //   item.content.toLowerCase().includes(value.toLowerCase())
@@ -108,19 +107,43 @@ export const greenhouse = async () => {
     setCurrentPageData()
   }
 
+  function addVerticalLoader() {
+    const loadMoreButton = mainElement?.querySelector('[tc-greenhouse-element="load-more"]')
+    console.log(loadMoreButton)
+    loadMoreButton?.addEventListener('click', handleLoadMore)
+  }
+
+  function handleLoadMore() {
+    if (current_page < Math.ceil(filteredData!.length / resultsPerPage)) {
+      current_page++
+      const newData = filteredData!.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
+      paginatedData = paginatedData.concat(newData)
+      renderList()
+    }
+  }
+
+  function addPagination() {
+    // add on click on next and previous buttons
+    const nextButton = document.getElementsByClassName('wf-next')[0]
+    const previousButton = document.getElementsByClassName('wf-previous')[0]
+
+    nextButton?.addEventListener('click', handleNext)
+    previousButton?.addEventListener('click', handlePrevious)
+  }
+
   function handlePrevious() {
     if (current_page > 1) {
       current_page--
-      paginatedData = filteredData!.slice((current_page - 1) * results_per_page, current_page * results_per_page)
+      paginatedData = filteredData!.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
       renderList()
     }
     list?.scrollIntoView({ behavior: 'smooth' })
   }
 
   function handleNext() {
-    if (current_page < Math.ceil(filteredData!.length / results_per_page)) {
+    if (current_page < Math.ceil(filteredData!.length / resultsPerPage)) {
       current_page++
-      paginatedData = filteredData!.slice((current_page - 1) * results_per_page, current_page * results_per_page)
+      paginatedData = filteredData!.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
       renderList()
     }
     list?.scrollIntoView({ behavior: 'smooth' })
@@ -128,6 +151,8 @@ export const greenhouse = async () => {
 
   function setFilters() {
     let filter_options = filters.map(filter => filter.name)
+
+    if (!apiData) return
 
     // set filters
     apiData.forEach(item => {
@@ -170,37 +195,40 @@ export const greenhouse = async () => {
   }
 
   function handleFilterChange(e: Event) {
+    if (!apiData) return
+    console.log(e.target)
 
     const locationFilter = document.querySelector('[tc-greenhouse-filter="location"]') as HTMLSelectElement
     const departmentFilter = document.querySelector('[tc-greenhouse-filter="department"]') as HTMLSelectElement
 
-    let filteredData: job[] = []
+    let sortedData: job[] = []
 
     if (locationFilter?.value && departmentFilter?.value) {
 
-      if (locationFilter.value === 'All Locations' && departmentFilter.value === 'All Departments') filteredData = apiData
+      if (locationFilter.value === 'All Locations' && departmentFilter.value === 'All Departments') sortedData = apiData
       else if (locationFilter.value === 'All Locations') {
         apiData.forEach(item => {
           if (item.departments[0].name === departmentFilter.value) {
-            filteredData.push(item)
+            sortedData.push(item)
           }
         })
       } else if (departmentFilter.value === 'All Departments') {
         apiData.forEach(item => {
           if (item.location.name === locationFilter.value) {
-            filteredData.push(item)
+            sortedData.push(item)
           }
         })
       } else {
         apiData.forEach(item => {
           if (item.departments[0].name === departmentFilter.value && item.location.name === locationFilter.value) {
-            filteredData.push(item)
+            sortedData.push(item)
           }
         })
       }
     }
-    console.log(filteredData.length)
-    filteredData = filteredData
+
+    console.log(sortedData.length)
+    filteredData = sortedData
     current_page = 1
     setCurrentPageData()
   }
