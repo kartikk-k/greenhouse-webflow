@@ -1,5 +1,3 @@
-
-
 export const greenhouse = async () => {
   let current_page = 1;
 
@@ -16,16 +14,19 @@ export const greenhouse = async () => {
     options: ['All Locations']
   }]
 
-  let REQUIRED_FIELDS = ['department', 'title', 'location', 'content']
+  const REQUIRED_FIELDS = ['department', 'title', 'location', 'content']
 
   // components required
-  let mainElement = document.querySelector('[tc-greenhouse-element="main"]');
-  let list = mainElement?.querySelector('[tc-greenhouse-element="list"]');
-  let listElement = list?.querySelector('[tc-greenhouse-element="list-item"]');
+  const mainElement = document.querySelector('[tc-greenhouse-element="main"]') as HTMLDivElement;
+  const list = mainElement?.querySelector('[tc-greenhouse-element="list"]') as HTMLDivElement;
+  const listElement = list?.querySelector('[tc-greenhouse-element="list-item"]') as HTMLDivElement;
 
   if (!mainElement || !list || !listElement) return // essentials/required
 
-  let searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0] as HTMLInputElement;
+  const errorComponent = mainElement?.querySelector('[tc-greenhouse-element="error"]') as HTMLElement
+  errorComponent.remove()
+
+  const searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0] as HTMLInputElement;
   // @ts-ignore
   searchElement && searchElement.addEventListener('input', e => handleInputChange(e.target.value))
 
@@ -38,10 +39,26 @@ export const greenhouse = async () => {
   let resultsPerPage = Number(mainElement.querySelector('[tc-greenhouse-results-per-page]')?.getAttribute('tc-greenhouse-results-per-page')) || 3 // default - 3
   console.log((mainElement.querySelector('[tc-greenhouse-results-per-page]')?.getAttribute('tc-greenhouse-results-per-page')))
 
+  // --------------------- main api call ---------------------
+  const loader = mainElement?.querySelector('[tc-greenhouse-element="loader"]') as HTMLElement
+  const mainParent = mainElement.parentElement as HTMLElement
 
+  const mainDisplayStyle = mainElement.style.display
+  mainElement.style.display = 'none'
+  mainParent.appendChild(loader)
 
-  await getDataFromGreenhouseAPI()
+  let componentData = await getDataFromGreenhouseAPI()
+  mainParent.removeChild(loader)
+  if (componentData instanceof Error) return renderErrorComponent()
+  mainElement.style.display = mainDisplayStyle
+
   setFilters()
+
+  function renderErrorComponent() {
+    mainElement.innerHTML = ''
+    if (errorComponent) mainElement!.appendChild(errorComponent)
+    mainElement.style.display = mainDisplayStyle
+  }
 
   function renderList() {
     if (!listElement) return
@@ -236,15 +253,32 @@ export const greenhouse = async () => {
 
   async function getDataFromGreenhouseAPI() {
 
+
+    // mainElement?.replaceWith(loader)
+    // loader.style.display = 'flex'
+
     // fake await promise
-    // await new Promise(resolve => setTimeout(resolve, 5000)); // waits for 2 seconds
+    await new Promise(resolve => setTimeout(resolve, 2000)); // waits for 2 seconds
 
-    let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
-      method: 'GET',
-    }).then(res => res.json()).catch(err => console.log(err))
+    let data: job[] = []
 
-    apiData = res.jobs
-    filteredData = res.jobs
+    try {
+      let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
+        method: 'GET',
+      }).then(res => res.json())
+
+      // throw new Error('Something went wrong')
+
+      // throw new Error('Something went wrong')3
+      if (!res.jobs) throw new Error('No jobs found')
+      data = res.jobs
+
+    } catch (err) {
+      return err
+    }
+
+    apiData = data
+    filteredData = data
     setCurrentPageData()
   }
 };

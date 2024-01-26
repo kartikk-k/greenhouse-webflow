@@ -17,21 +17,38 @@
       name: "location",
       options: ["All Locations"]
     }];
-    let REQUIRED_FIELDS = ["department", "title", "location", "content"];
-    let mainElement = document.querySelector('[tc-greenhouse-element="main"]');
-    let list = mainElement?.querySelector('[tc-greenhouse-element="list"]');
-    let listElement = list?.querySelector('[tc-greenhouse-element="list-item"]');
+    const REQUIRED_FIELDS = ["department", "title", "location", "content"];
+    const mainElement = document.querySelector('[tc-greenhouse-element="main"]');
+    const list = mainElement?.querySelector('[tc-greenhouse-element="list"]');
+    const listElement = list?.querySelector('[tc-greenhouse-element="list-item"]');
     if (!mainElement || !list || !listElement)
       return;
-    let searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0];
+    const errorComponent = mainElement?.querySelector('[tc-greenhouse-element="error"]');
+    errorComponent.remove();
+    const searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0];
     searchElement && searchElement.addEventListener("input", (e) => handleInputChange(e.target.value));
     let paginate = mainElement.getAttribute("tc-greenhouse-paginate") === "true" ? true : false;
     paginate ? addPagination() : addVerticalLoader();
     let contentSearch = mainElement.querySelector('[tc-greenhouse-content-search="true"]') ? true : false;
     let resultsPerPage = Number(mainElement.querySelector("[tc-greenhouse-results-per-page]")?.getAttribute("tc-greenhouse-results-per-page")) || 3;
     console.log(mainElement.querySelector("[tc-greenhouse-results-per-page]")?.getAttribute("tc-greenhouse-results-per-page"));
-    await getDataFromGreenhouseAPI();
+    const loader = mainElement?.querySelector('[tc-greenhouse-element="loader"]');
+    const mainParent = mainElement.parentElement;
+    const mainDisplayStyle = mainElement.style.display;
+    mainElement.style.display = "none";
+    mainParent.appendChild(loader);
+    let componentData = await getDataFromGreenhouseAPI();
+    mainParent.removeChild(loader);
+    if (componentData instanceof Error)
+      return renderErrorComponent();
+    mainElement.style.display = mainDisplayStyle;
     setFilters();
+    function renderErrorComponent() {
+      mainElement.innerHTML = "";
+      if (errorComponent)
+        mainElement.appendChild(errorComponent);
+      mainElement.style.display = mainDisplayStyle;
+    }
     function renderList() {
       if (!listElement)
         return;
@@ -192,11 +209,20 @@
       setCurrentPageData();
     }
     async function getDataFromGreenhouseAPI() {
-      let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
-        method: "GET"
-      }).then((res2) => res2.json()).catch((err) => console.log(err));
-      apiData = res.jobs;
-      filteredData = res.jobs;
+      await new Promise((resolve) => setTimeout(resolve, 2e3));
+      let data = [];
+      try {
+        let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
+          method: "GET"
+        }).then((res2) => res2.json());
+        if (!res.jobs)
+          throw new Error("No jobs found");
+        data = res.jobs;
+      } catch (err) {
+        return err;
+      }
+      apiData = data;
+      filteredData = data;
       setCurrentPageData();
     }
   };
