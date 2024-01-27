@@ -69,15 +69,18 @@ export const greenhouse = async () => {
     paginatedData.forEach(item => {
       let newElement = listElement!.cloneNode(true) as HTMLElement
 
-      newElement.style.display = 'flex'
-      newElement.style.opacity = '1'
+      // newElement.style.display = 'flex'
+      // newElement.style.opacity = '1'
       REQUIRED_FIELDS.forEach(field => {
         // find all elements of the current field
         newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach(element => {
           // replacing with actual data
           if (field === 'location') {
             element.innerHTML = item.location.name
-          } else {
+          } else if (field === 'department') {
+            element.innerHTML = item.departments[0].name
+          }
+          else {
             element.textContent = item[field as keyof job]
           }
         })

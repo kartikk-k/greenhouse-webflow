@@ -55,12 +55,12 @@
       let items = [];
       paginatedData.forEach((item) => {
         let newElement = listElement.cloneNode(true);
-        newElement.style.display = "flex";
-        newElement.style.opacity = "1";
         REQUIRED_FIELDS.forEach((field) => {
           newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach((element) => {
             if (field === "location") {
               element.innerHTML = item.location.name;
+            } else if (field === "department") {
+              element.innerHTML = item.departments[0].name;
             } else {
               element.textContent = item[field];
             }
