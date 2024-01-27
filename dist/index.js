@@ -229,8 +229,8 @@
 
   // src/index.ts
   window.Webflow ||= [];
-  window.onload = () => {
+  window.Webflow.push(() => {
     greenhouse();
-  };
+  });
 })();
 //# sourceMappingURL=index.js.map
