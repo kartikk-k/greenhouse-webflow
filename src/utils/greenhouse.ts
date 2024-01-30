@@ -1,5 +1,11 @@
 export const greenhouse = async () => {
+
+  // add css class in document
+  const hiddenStyle = document.createElement('hidden');
+  hiddenStyle.style.display = 'hidden'
+
   let current_page = 1;
+  let max_page = 1;
 
   let apiData: undefined | null | job[] = [] // all data from api response
   let dataStore: job[] = [] // used for search
@@ -14,7 +20,7 @@ export const greenhouse = async () => {
     options: ['All Locations']
   }]
 
-  const REQUIRED_FIELDS = ['department', 'title', 'location', 'content']
+  const ALLOWED_FIELDS = ['department', 'title', 'location', 'content', 'open']
 
   // components required
   const mainElement = document.querySelector('[tc-greenhouse-element="main"]') as HTMLDivElement;
@@ -24,7 +30,9 @@ export const greenhouse = async () => {
   if (!mainElement || !list || !listElement) return // essentials/required
 
   const errorComponent = mainElement?.querySelector('[tc-greenhouse-element="error"]') as HTMLElement
-  errorComponent.remove()
+  errorComponent?.remove()
+  const emptyComponent = mainElement?.querySelector('[tc-greenhouse-element="empty-state"]') as HTMLElement
+  emptyComponent?.remove()
 
   const searchElement = mainElement?.querySelectorAll('[tc-greenhouse-element="search"]')[0] as HTMLInputElement;
   // @ts-ignore
@@ -36,32 +44,39 @@ export const greenhouse = async () => {
 
   let contentSearch: boolean = mainElement.querySelector('[tc-greenhouse-content-search="true"]') ? true : false // default - false
   //  --- pending ----
-  let resultsPerPage = Number(mainElement.querySelector('[tc-greenhouse-results-per-page]')?.getAttribute('tc-greenhouse-results-per-page')) || 3 // default - 3
-  console.log((mainElement.querySelector('[tc-greenhouse-results-per-page]')?.getAttribute('tc-greenhouse-results-per-page')))
+  let resultsPerPage = Number(mainElement.getAttribute('tc-greenhouse-results-per-page')) || 5 // default - 5
 
   // --------------------- main api call ---------------------
-  const loader = mainElement?.querySelector('[tc-greenhouse-element="loader"]') as HTMLElement
+  const loader = mainElement.querySelector('[tc-greenhouse-element="loader"]') as HTMLElement
   const mainParent = mainElement.parentElement as HTMLElement
 
   const mainDisplayStyle = mainElement.style.display
   mainElement.style.display = 'none'
-  mainParent.appendChild(loader)
+  if (loader) mainParent.appendChild(loader)
+  console.log(loader)
 
   let componentData = await getDataFromGreenhouseAPI()
-  mainParent.removeChild(loader)
-  if (componentData instanceof Error) return renderErrorComponent()
+  if (loader) mainParent.removeChild(loader)
+  if (componentData instanceof Error) return renderErrorComponent(componentData.message)
   mainElement.style.display = mainDisplayStyle
 
   setFilters()
 
-  function renderErrorComponent() {
+  function renderErrorComponent(err: string) {
     mainElement.innerHTML = ''
-    if (errorComponent) mainElement!.appendChild(errorComponent)
+    if (err === 'No jobs found') {
+      if (emptyComponent) mainElement.appendChild(emptyComponent)
+
+      console.log(emptyComponent)
+    } else if (errorComponent) {
+      mainElement.appendChild(errorComponent)
+    }
     mainElement.style.display = mainDisplayStyle
   }
 
   function renderList() {
     if (!listElement) return
+    handlePaginateButtonStatus()
 
     let items: HTMLElement[] = []
 
@@ -71,7 +86,7 @@ export const greenhouse = async () => {
 
       // newElement.style.display = 'flex'
       // newElement.style.opacity = '1'
-      REQUIRED_FIELDS.forEach(field => {
+      ALLOWED_FIELDS.forEach(field => {
         // find all elements of the current field
         newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach(element => {
           // replacing with actual data
@@ -79,9 +94,13 @@ export const greenhouse = async () => {
             element.innerHTML = item.location.name
           } else if (field === 'department') {
             element.innerHTML = item.departments[0].name
-          }
+          } else if (field === 'open') {
+            element.setAttribute('href', item.absolute_url || '#')
+          }else if (field === 'content') {
+            
+          } 
           else {
-            element.textContent = item[field as keyof job]
+            element.innerHTML = item[field as keyof job]
           }
         })
       })
@@ -149,6 +168,35 @@ export const greenhouse = async () => {
 
     nextButton?.addEventListener('click', handleNext)
     previousButton?.addEventListener('click', handlePrevious)
+  }
+
+  function handlePaginateButtonStatus() {
+    if (paginate) {
+      const nextButton = document.getElementsByClassName('wf-next')[0] as HTMLElement
+      const previousButton = document.getElementsByClassName('wf-previous')[0] as HTMLElement
+      if (!nextButton || !previousButton) return
+      if (current_page === 1) {
+        previousButton.classList.add('hidden')
+        nextButton.classList.remove('hidden')
+      } else if (current_page === Math.ceil(filteredData!.length / resultsPerPage)) {
+        nextButton.classList.add('hidden')
+        previousButton.classList.remove('hidden')
+      } else if (filteredData?.length <= resultsPerPage) {
+        nextButton.classList.add('hidden')
+        previousButton.classList.add('hidden')
+      } else {
+        nextButton.classList.remove('hidden')
+        previousButton.classList.remove('hidden')
+      }
+    } else {
+      const loadMoreButton = mainElement?.querySelector('[tc-greenhouse-element="load-more"]') as HTMLElement
+      if (!loadMoreButton) return
+      if (current_page === Math.ceil(filteredData!.length / resultsPerPage) || filteredData?.length <= resultsPerPage) {
+        loadMoreButton.classList.add('hidden')
+      } else {
+        loadMoreButton.classList.remove('hidden')
+      }
+    }
   }
 
   function handlePrevious() {
@@ -266,13 +314,18 @@ export const greenhouse = async () => {
     let data: job[] = []
 
     try {
-      let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/mural/jobs?content=true`, {
+      const board_id = mainElement.getAttribute('tc-greenhouse-board-id')
+      if (!board_id) throw new Error('Board id not found')
+
+      const fetch_content = mainElement.getAttribute('tc-greenhouse-content') === 'true' ? true : false
+
+      let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${board_id}/jobs?content=${fetch_content}`, {
         method: 'GET',
       }).then(res => res.json())
 
-      // throw new Error('Something went wrong')
+      // throw new Error('No jobs found')
 
-      // throw new Error('Something went wrong')3
+      // throw new Error('Something went wrong')
       if (!res.jobs) throw new Error('No jobs found')
       data = res.jobs
 
