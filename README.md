@@ -1,3 +1,7 @@
+### CDN link
+https://github.com/kartikk-k/greenhouse-webflow/blob/main/dist/index.js
+
+
 ## Main element
 `tc-greenhouse-element="main"` - everything realted to greenhouse should be inside this element
 
