@@ -53,7 +53,6 @@ export const greenhouse = async () => {
   const mainDisplayStyle = mainElement.style.display
   mainElement.style.display = 'none'
   if (loader) mainParent.appendChild(loader)
-  console.log(loader)
 
   let componentData = await getDataFromGreenhouseAPI()
   if (loader) mainParent.removeChild(loader)
@@ -66,8 +65,6 @@ export const greenhouse = async () => {
     mainElement.innerHTML = ''
     if (err === 'No jobs found') {
       if (emptyComponent) mainElement.appendChild(emptyComponent)
-
-      console.log(emptyComponent)
     } else if (errorComponent) {
       mainElement.appendChild(errorComponent)
     }
@@ -114,10 +111,8 @@ export const greenhouse = async () => {
 
   function setCurrentPageData() {
     if (!filteredData) return
-    console.log("current_page", current_page)
     if (paginate) {
       paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
-      console.log("paginatedData", paginatedData)
     } else {
       if (!paginatedData.length) paginatedData = filteredData.slice((current_page - 1) * resultsPerPage, current_page * resultsPerPage)
       // change on search
@@ -130,7 +125,6 @@ export const greenhouse = async () => {
 
   function handleInputChange(value: string) {
     if (!apiData) return
-    console.log(value.trim())
     if (!value.trim()) {
       filteredData = dataStore
       dataStore = []
@@ -148,7 +142,6 @@ export const greenhouse = async () => {
 
   function addVerticalLoader() {
     const loadMoreButton = mainElement?.querySelector('[tc-greenhouse-element="load-more"]')
-    console.log(loadMoreButton)
     loadMoreButton?.addEventListener('click', handleLoadMore)
   }
 
@@ -163,8 +156,8 @@ export const greenhouse = async () => {
 
   function addPagination() {
     // add on click on next and previous buttons
-    const nextButton = document.getElementsByClassName('wf-next')[0]
-    const previousButton = document.getElementsByClassName('wf-previous')[0]
+    const nextButton = document.getElementsByClassName('w-pagination-previous')[0]
+    const previousButton = document.getElementsByClassName('w-pagination-previous')[0]
 
     nextButton?.addEventListener('click', handleNext)
     previousButton?.addEventListener('click', handlePrevious)
@@ -172,8 +165,8 @@ export const greenhouse = async () => {
 
   function handlePaginateButtonStatus() {
     if (paginate) {
-      const nextButton = document.getElementsByClassName('wf-next')[0] as HTMLElement
-      const previousButton = document.getElementsByClassName('wf-previous')[0] as HTMLElement
+      const nextButton = document.getElementsByClassName('w-pagination-next')[0] as HTMLElement
+      const previousButton = document.getElementsByClassName('w-pagination-previous')[0] as HTMLElement
       if (!nextButton || !previousButton) return
       if (current_page === 1) {
         previousButton.classList.add('hidden')
@@ -238,7 +231,6 @@ export const greenhouse = async () => {
     })
 
     let filterElements = mainElement?.querySelectorAll('[tc-greenhouse-filter]') as NodeListOf<HTMLSelectElement>
-    console.log(filterElements, "filterElements")
 
     if (filterElements?.length) filterElements.forEach(item => {
 
@@ -264,7 +256,6 @@ export const greenhouse = async () => {
 
   function handleFilterChange(e: Event) {
     if (!apiData) return
-    console.log(e.target)
 
     const locationFilter = document.querySelector('[tc-greenhouse-filter="location"]') as HTMLSelectElement
     const departmentFilter = document.querySelector('[tc-greenhouse-filter="department"]') as HTMLSelectElement
@@ -295,7 +286,6 @@ export const greenhouse = async () => {
       }
     }
 
-    console.log(sortedData.length)
     filteredData = sortedData
     current_page = 1
     setCurrentPageData()
