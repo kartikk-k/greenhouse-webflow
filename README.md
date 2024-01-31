@@ -1,5 +1,5 @@
 ### CDN link
-https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0/dist/index.js
+https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.1/dist/index.js
 
 
 ## Main element
