@@ -1,6 +1,6 @@
 ### CDN link
 ```
-<script src="https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.1/dist/index.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.2/dist/index.js"></script>
 ```
 
 ## Main element
