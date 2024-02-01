@@ -1,6 +1,7 @@
 ### CDN link
-https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.1/dist/index.js
-
+```
+<script src="https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.2/dist/index.js"></script>
+```
 
 ## Main element
 `tc-greenhouse-element="main"` - everything realted to greenhouse should be inside this element

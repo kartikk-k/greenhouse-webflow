@@ -1,9 +1,5 @@
 export const greenhouse = async () => {
 
-  // add css class in document
-  const hiddenStyle = document.createElement('hidden');
-  hiddenStyle.style.display = 'hidden'
-
   let current_page = 1;
   let max_page = 1;
 
@@ -90,7 +86,8 @@ export const greenhouse = async () => {
           if (field === 'location') {
             element.innerHTML = item.location.name
           } else if (field === 'department') {
-            element.innerHTML = item.departments[0].name
+            console.log(item.departments)
+            element.innerHTML = item.departments[0]?.name
           } else if (field === 'open') {
             element.setAttribute('href', item.absolute_url || '#')
           }else if (field === 'content') {
@@ -156,7 +153,7 @@ export const greenhouse = async () => {
 
   function addPagination() {
     // add on click on next and previous buttons
-    const nextButton = document.getElementsByClassName('w-pagination-previous')[0]
+    const nextButton = document.getElementsByClassName('w-pagination-next')[0]
     const previousButton = document.getElementsByClassName('w-pagination-previous')[0]
 
     nextButton?.addEventListener('click', handleNext)
@@ -169,25 +166,25 @@ export const greenhouse = async () => {
       const previousButton = document.getElementsByClassName('w-pagination-previous')[0] as HTMLElement
       if (!nextButton || !previousButton) return
       if (current_page === 1) {
-        previousButton.classList.add('hidden')
-        nextButton.classList.remove('hidden')
+        previousButton.style.display = 'hidden'
+        nextButton.style.display = 'inline-block'
       } else if (current_page === Math.ceil(filteredData!.length / resultsPerPage)) {
-        nextButton.classList.add('hidden')
-        previousButton.classList.remove('hidden')
+        nextButton.style.display = 'hidden'
+        previousButton.style.display = 'inline-block'
       } else if (filteredData?.length <= resultsPerPage) {
-        nextButton.classList.add('hidden')
-        previousButton.classList.add('hidden')
+        nextButton.style.display = 'hidden'
+        previousButton.style.display = 'hidden'
       } else {
-        nextButton.classList.remove('hidden')
-        previousButton.classList.remove('hidden')
+        nextButton.style.display = 'inline-block'
+        previousButton.style.display = 'inline-block'
       }
     } else {
       const loadMoreButton = mainElement?.querySelector('[tc-greenhouse-element="load-more"]') as HTMLElement
       if (!loadMoreButton) return
       if (current_page === Math.ceil(filteredData!.length / resultsPerPage) || filteredData?.length <= resultsPerPage) {
-        loadMoreButton.classList.add('hidden')
+        loadMoreButton.style.display = 'none'
       } else {
-        loadMoreButton.classList.remove('hidden')
+        loadMoreButton.style.display = 'inline-block'
       }
     }
   }
@@ -309,7 +306,7 @@ export const greenhouse = async () => {
 
       const fetch_content = mainElement.getAttribute('tc-greenhouse-content') === 'true' ? true : false
 
-      let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${board_id}/jobs?content=${fetch_content}`, {
+      let res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${board_id}/jobs?content=${true}`, {
         method: 'GET',
       }).then(res => res.json())
 
