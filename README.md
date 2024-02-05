@@ -1,6 +1,6 @@
 ### CDN link
 ```
-<script src="https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.2/dist/index.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/kartikk-k/greenhouse-webflow@1.0.3/dist/index.js"></script>
 ```
 
 ## Main element
@@ -24,13 +24,13 @@
 
 ### Rendering values in list-item (everything is optional and should be inside **list-item** element)
 
-`tc-greenhouse-value="title"` - job title
+`tc-greenhouse-element="title"` - job title
 
-`tc-greenhouse-value="location"` - job location
+`tc-greenhouse-element="location"` - job location
 
 `tc-greenhouse-element="department"` - job department
 
-`tc-greenhouse-element="open"` - to open job on greenhouse when clicked
+`tc-greenhouse-element="link"` - to open job on greenhouse when clicked
 
 # Additional elements(everything inside **main** element and outside **list** element)
 `tc-greenhouse-element="load-more"` - element for load more button <br>
@@ -44,11 +44,24 @@
 
 `pagination buttons provided by webflow` - for pagination (if paginate is set to true)
 
+# Filters & Search (should be inside **main** element)
+
+### Filters (optional)
+
+`tc-greenhouse-filter="location"` - filter by location
+`tc-greenhouse-filter="department"` - filter by department
+
+### Search (optional)
+`tc-greenhouse-element="search"` - search input for searching jobs
+
 # Structure
 ```
   -body----------------------
   |                         |
   |  -main------------------|
+  |  |                      |
+  |  |  -filters & search---|
+  |  |                      |
   |  |                      |
   |  |  -list---------------|
   |  |  |                   |
