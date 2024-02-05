@@ -1,7 +1,6 @@
 export const greenhouse = async () => {
 
   let current_page = 1;
-  let max_page = 1;
 
   let apiData: undefined | null | job[] = [] // all data from api response
   let dataStore: job[] = [] // used for search
@@ -16,7 +15,7 @@ export const greenhouse = async () => {
     options: ['All Locations']
   }]
 
-  const ALLOWED_FIELDS = ['department', 'title', 'location', 'content', 'open']
+  const ALLOWED_FIELDS = ['department', 'title', 'location', 'content', 'link']
 
   // components required
   const mainElement = document.querySelector('[tc-greenhouse-element="main"]') as HTMLDivElement;
@@ -38,8 +37,6 @@ export const greenhouse = async () => {
   let paginate: boolean = mainElement.getAttribute('tc-greenhouse-paginate') === 'true' ? true : false // default - false
   paginate ? addPagination() : addVerticalLoader()
 
-  let contentSearch: boolean = mainElement.querySelector('[tc-greenhouse-content-search="true"]') ? true : false // default - false
-  //  --- pending ----
   let resultsPerPage = Number(mainElement.getAttribute('tc-greenhouse-results-per-page')) || 5 // default - 5
 
   // --------------------- main api call ---------------------
@@ -76,9 +73,7 @@ export const greenhouse = async () => {
     // creating list of elements
     paginatedData.forEach(item => {
       let newElement = listElement!.cloneNode(true) as HTMLElement
-
-      // newElement.style.display = 'flex'
-      // newElement.style.opacity = '1'
+    
       ALLOWED_FIELDS.forEach(field => {
         // find all elements of the current field
         newElement.querySelectorAll(`[tc-greenhouse-element="${field}"]`).forEach(element => {
@@ -88,7 +83,7 @@ export const greenhouse = async () => {
           } else if (field === 'department') {
             console.log(item.departments)
             element.innerHTML = item.departments[0]?.name
-          } else if (field === 'open') {
+          } else if (field === 'link') {
             element.setAttribute('href', item.absolute_url || '#')
           }else if (field === 'content') {
             
@@ -166,14 +161,14 @@ export const greenhouse = async () => {
       const previousButton = document.getElementsByClassName('w-pagination-previous')[0] as HTMLElement
       if (!nextButton || !previousButton) return
       if (current_page === 1) {
-        previousButton.style.display = 'hidden'
+        previousButton.style.display = 'none'
         nextButton.style.display = 'inline-block'
       } else if (current_page === Math.ceil(filteredData!.length / resultsPerPage)) {
-        nextButton.style.display = 'hidden'
+        nextButton.style.display = 'none'
         previousButton.style.display = 'inline-block'
       } else if (filteredData?.length <= resultsPerPage) {
-        nextButton.style.display = 'hidden'
-        previousButton.style.display = 'hidden'
+        nextButton.style.display = 'none'
+        previousButton.style.display = 'none'
       } else {
         nextButton.style.display = 'inline-block'
         previousButton.style.display = 'inline-block'
@@ -291,12 +286,8 @@ export const greenhouse = async () => {
 
   async function getDataFromGreenhouseAPI() {
 
-
-    // mainElement?.replaceWith(loader)
-    // loader.style.display = 'flex'
-
     // fake await promise
-    await new Promise(resolve => setTimeout(resolve, 2000)); // waits for 2 seconds
+    // await new Promise(resolve => setTimeout(resolve, 2000)); // waits for 2 seconds
 
     let data: job[] = []
 
